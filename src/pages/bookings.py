@@ -3,6 +3,7 @@ from dash import html, dcc, callback, Input, Output, State, dash_table
 import dash_bootstrap_components as dbc
 from src.utils.database import get_session
 from src.models.booking import Booking
+from src.models.flight import FlightSchedule
 from src.models.rating import Rating
 import flask
 import pandas as pd
@@ -90,12 +91,10 @@ def load_active_bookings(active_tab):
         ).filter(
             Booking.passenger_id == user_id,
             Booking.flight_schedule.has(
-                scheduled_departure_time > datetime.now()
+                FlightSchedule.scheduled_departure_time > datetime.now()
             )
         ).order_by(
-            Booking.flight_schedule.has(
-                scheduled_departure_time.asc()
-            )
+            FlightSchedule.scheduled_departure_time.asc()
         )
         
         bookings = query.all()
@@ -210,12 +209,10 @@ def load_past_bookings(active_tab):
         ).filter(
             Booking.passenger_id == user_id,
             Booking.flight_schedule.has(
-                scheduled_departure_time <= datetime.now()
+                FlightSchedule.scheduled_departure_time <= datetime.now()
             )
         ).order_by(
-            Booking.flight_schedule.has(
-                scheduled_departure_time.desc()
-            )
+            FlightSchedule.scheduled_departure_time.desc()
         )
         
         bookings = query.all()

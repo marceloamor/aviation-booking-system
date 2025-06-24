@@ -188,7 +188,7 @@ def search_flights(n_clicks, from_airport, to_airport, departure_date, num_passe
                 ],
                 data=df.to_dict("records"),
                 sort_action="native",
-                sort_by=[{"column_id": "base_cost", "direction": "ascending"}],
+                sort_by=[{"column_id": "base_cost", "direction": "asc"}],
                 row_selectable="single",
                 selected_rows=[],
                 style_table={"overflowX": "auto"},
@@ -253,5 +253,5 @@ def handle_booking_redirect(n_clicks, flight_id, num_passengers):
     # Redirect to booking page
     return html.Div([
         dbc.Alert("Redirecting to booking page...", color="success"),
-        dcc.Location(pathname=f"/bookings/new?flight_id={flight_id}&passengers={num_passengers}", id="redirect-to-booking")
+        dcc.Location(pathname="/bookings/new", id="redirect-to-booking")
     ]) 

@@ -31,6 +31,12 @@ def layout(flight_id=None, passengers=None, **kwargs):
             dcc.Location(pathname="/login", id="redirect-to-login")
         ])
     
+    # Get booking data from session if not provided as parameters
+    if not flight_id:
+        flight_id = flask.session.get("booking_flight_id")
+    if not passengers:
+        passengers = flask.session.get("booking_passengers", 1)
+    
     # Default layout for booking form
     return html.Div([
         dbc.Row([
@@ -44,72 +50,45 @@ def layout(flight_id=None, passengers=None, **kwargs):
                 # Flight details will be loaded here
                 html.Div(id="booking-flight-details"),
                 
-                # Booking form
+                # Simplified booking form
                 dbc.Card([
-                    dbc.CardHeader(html.H4("Payment Information")),
+                    dbc.CardHeader(html.H4("Confirm Your Booking")),
                     dbc.CardBody([
+                        dbc.Alert([
+                            html.H5("Payment Information"),
+                            html.P("This is a demonstration system. No real payment will be processed.", className="mb-0")
+                        ], color="info", className="mb-4"),
+                        
                         dbc.Form([
                             dbc.Row([
                                 dbc.Col([
-                                    dbc.Label("Card Type"),
-                                    dcc.Dropdown(
-                                        id="booking-card-type",
-                                        options=[
-                                            {"label": "Visa", "value": "visa"},
-                                            {"label": "MasterCard", "value": "mastercard"},
-                                            {"label": "American Express", "value": "amex"}
-                                        ],
-                                        placeholder="Select card type"
-                                    )
-                                ], width=6)
-                            ], className="mb-3"),
-                            
-                            dbc.Row([
-                                dbc.Col([
-                                    dbc.Label("Card Number"),
+                                    dbc.Label("Passenger Name"),
                                     dbc.Input(
                                         type="text",
-                                        id="booking-card-number",
-                                        placeholder="XXXX XXXX XXXX XXXX"
+                                        id="booking-passenger-name",
+                                        placeholder="Enter passenger name",
+                                        required=True
                                     )
                                 ])
                             ], className="mb-3"),
                             
                             dbc.Row([
                                 dbc.Col([
-                                    dbc.Label("Cardholder Name"),
+                                    dbc.Label("Contact Phone"),
                                     dbc.Input(
-                                        type="text",
-                                        id="booking-cardholder-name",
-                                        placeholder="Name as it appears on the card"
+                                        type="tel",
+                                        id="booking-contact-phone",
+                                        placeholder="Enter contact phone number",
+                                        required=True
                                     )
                                 ])
-                            ], className="mb-3"),
-                            
-                            dbc.Row([
-                                dbc.Col([
-                                    dbc.Label("Expiry Date"),
-                                    dbc.Input(
-                                        type="text",
-                                        id="booking-expiry-date",
-                                        placeholder="MM/YY"
-                                    )
-                                ], width=6),
-                                dbc.Col([
-                                    dbc.Label("Security Code (CVV)"),
-                                    dbc.Input(
-                                        type="password",
-                                        id="booking-cvv",
-                                        placeholder="XXX"
-                                    )
-                                ], width=6)
                             ], className="mb-3"),
                             
                             dbc.Row([
                                 dbc.Col([
                                     dbc.Checkbox(
                                         id="booking-terms",
-                                        label="I agree to the Terms and Conditions",
+                                        label="I agree to the Terms and Conditions and Privacy Policy",
                                         value=False
                                     )
                                 ])
@@ -118,11 +97,12 @@ def layout(flight_id=None, passengers=None, **kwargs):
                             dbc.Row([
                                 dbc.Col([
                                     dbc.Button(
-                                        "Complete Booking",
+                                        "Confirm Booking",
                                         id="complete-booking-btn",
                                         color="success",
                                         className="w-100",
-                                        disabled=True
+                                        disabled=True,
+                                        size="lg"
                                     ),
                                     html.Div(id="booking-result", className="mt-3")
                                 ])
@@ -235,16 +215,13 @@ def load_flight_details(flight_id, passengers):
 
 @callback(
     Output("complete-booking-btn", "disabled"),
-    [Input("booking-card-type", "value"),
-     Input("booking-card-number", "value"),
-     Input("booking-cardholder-name", "value"),
-     Input("booking-expiry-date", "value"),
-     Input("booking-cvv", "value"),
+    [Input("booking-passenger-name", "value"),
+     Input("booking-contact-phone", "value"),
      Input("booking-terms", "value")]
 )
-def enable_complete_booking(card_type, card_number, cardholder_name, expiry_date, cvv, terms_accepted):
+def enable_complete_booking(passenger_name, contact_phone, terms_accepted):
     # Enable button only if all fields are filled and terms accepted
-    return not all([card_type, card_number, cardholder_name, expiry_date, cvv, terms_accepted])
+    return not all([passenger_name, contact_phone, terms_accepted])
 
 @callback(
     Output("booking-result", "children"),
