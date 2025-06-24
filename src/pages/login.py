@@ -77,7 +77,8 @@ layout = html.Div([
 ])
 
 @callback(
-    Output("login-output", "children"),
+    [Output("login-output", "children"),
+     Output("login-status", "data", allow_duplicate=True)],
     Input("login-button", "n_clicks"),
     State("login-email", "value"),
     State("login-password", "value"),
@@ -85,7 +86,7 @@ layout = html.Div([
 )
 def process_login(n_clicks, email, password):
     if not email or not password:
-        return dbc.Alert("Please fill in all fields", color="danger")
+        return dbc.Alert("Please fill in all fields", color="danger"), False
     
     session = get_session()
     user = session.query(User).filter_by(email=email).first()
@@ -97,9 +98,11 @@ def process_login(n_clicks, email, password):
         flask.session["user_name"] = user.full_name
         
         # Create success message with redirect
-        return html.Div([
+        success_msg = html.Div([
             dbc.Alert("Login successful! Redirecting...", color="success"),
             dcc.Location(pathname="/", id="login-redirect")
         ])
+        
+        return success_msg, True
     else:
-        return dbc.Alert("Invalid email or password", color="danger") 
+        return dbc.Alert("Invalid email or password", color="danger"), False 

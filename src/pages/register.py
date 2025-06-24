@@ -162,7 +162,8 @@ layout = html.Div([
 ])
 
 @callback(
-    Output("register-output", "children"),
+    [Output("register-output", "children"),
+     Output("login-status", "data", allow_duplicate=True)],
     Input("register-button", "n_clicks"),
     State("register-first-name", "value"),
     State("register-last-name", "value"),
@@ -181,28 +182,28 @@ def process_registration(n_clicks, first_name, last_name, email, phone, password
     # Validate required fields
     if not all([first_name, last_name, email, phone, password, confirm_password, 
                street, city, postal_code, country]):
-        return dbc.Alert("Please fill in all required fields", color="danger")
+        return dbc.Alert("Please fill in all required fields", color="danger"), False
     
     # Validate email format
     email_pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     if not re.match(email_pattern, email):
-        return dbc.Alert("Please enter a valid email address", color="danger")
+        return dbc.Alert("Please enter a valid email address", color="danger"), False
     
     # Validate password match
     if password != confirm_password:
-        return dbc.Alert("Passwords do not match", color="danger")
+        return dbc.Alert("Passwords do not match", color="danger"), False
     
     # Check if email already exists
     session = get_session()
     existing_user = session.query(User).filter_by(email=email).first()
     if existing_user:
-        return dbc.Alert("This email is already registered", color="danger")
+        return dbc.Alert("This email is already registered", color="danger"), False
     
     try:
         # Get passenger role
         passenger_role = session.query(Role).filter_by(name="passenger").first()
         if not passenger_role:
-            return dbc.Alert("System error: Role not found", color="danger")
+            return dbc.Alert("System error: Role not found", color="danger"), False
         
         # Create new user
         new_user = User(
@@ -227,15 +228,17 @@ def process_registration(n_clicks, first_name, last_name, email, phone, password
         flask.session["user_name"] = new_user.full_name
         
         # Show success and redirect
-        return html.Div([
+        success_msg = html.Div([
             dbc.Alert("Registration successful! Redirecting to home page...", color="success"),
             dcc.Location(pathname="/", id="register-redirect")
         ])
         
+        return success_msg, True
+        
     except Exception as e:
         # Handle any errors
         session.rollback()
-        return dbc.Alert(f"An error occurred: {str(e)}", color="danger")
+        return dbc.Alert(f"An error occurred: {str(e)}", color="danger"), False
     
     finally:
         session.close() 
