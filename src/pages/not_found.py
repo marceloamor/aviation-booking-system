@@ -9,7 +9,7 @@ layout = html.Div([
         dbc.Col([
             html.Div([
                 html.H1("404", className="display-1 text-center text-primary"),
-                html.H2("Page Not Found", className="text-center mb-4"),
+                html.H2("Page not implemented by the devs haha whoooops (outside the scope of this project)", className="text-center mb-4"),
                 html.P(
                     "404 - Page not implemented by the devs haha whoooops (outside the scope of this project)",
                     className="lead text-center mb-4"

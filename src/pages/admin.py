@@ -390,7 +390,7 @@ def load_bookings_view():
                 "Booking ID": booking.confirmation_code,
                 "Passenger": f"{booking.passenger.first_name} {booking.passenger.last_name}",
                 "Flight": f"{booking.flight_schedule.flight.flight_number}",
-                "Route": f"{booking.flight_schedule.flight.origin} → {booking.flight_schedule.flight.destination}",
+                "Route": f"{booking.flight_schedule.departure_airport} → {booking.flight_schedule.arrival_airport}",
                 "Date": booking.flight_schedule.scheduled_departure_time.strftime("%Y-%m-%d"),
                 "Price": f"£{booking.cost_charged:.2f}",
                 "Status": "Confirmed",
@@ -478,12 +478,12 @@ def load_booking_reports_view():
         
         # Popular routes
         popular_routes = session.query(
-            Flight.origin,
-            Flight.destination,
+            FlightSchedule.departure_airport,
+            FlightSchedule.arrival_airport,
             func.count(Booking.id).label('booking_count'),
             func.sum(Booking.cost_charged).label('total_revenue')
-        ).join(FlightSchedule).join(Booking).group_by(
-            Flight.origin, Flight.destination
+        ).join(Booking).group_by(
+            FlightSchedule.departure_airport, FlightSchedule.arrival_airport
         ).order_by(func.count(Booking.id).desc()).limit(10).all()
         
         # Average booking value by period
@@ -504,7 +504,7 @@ def load_booking_reports_view():
     routes_data = []
     for route in popular_routes:
         routes_data.append({
-            "Route": f"{route.origin} → {route.destination}",
+            "Route": f"{route.departure_airport} → {route.arrival_airport}",
             "Bookings": route.booking_count,
             "Revenue": f"£{route.total_revenue:,.2f}",
             "Avg Value": f"£{route.total_revenue / route.booking_count:.2f}"
@@ -639,7 +639,7 @@ def load_flight_status_view():
         for schedule in today_flights[:20]:  # Limit to 20 for display
             flight_data.append({
                 "Flight": schedule.flight.flight_number,
-                "Route": f"{schedule.flight.origin} → {schedule.flight.destination}",
+                "Route": f"{schedule.departure_airport} → {schedule.arrival_airport}",
                 "Departure": schedule.scheduled_departure_time.strftime("%H:%M"),
                 "Arrival": schedule.scheduled_arrival_time.strftime("%H:%M"),
                 "Aircraft": schedule.flight.aircraft.registration_number,
@@ -698,22 +698,24 @@ def load_schedule_reports_view():
     """Load schedule reports"""
     session = get_session()
     try:
-        # Aircraft utilisation
+        # Aircraft utilisation - FIXED: explicit join path
         aircraft_usage = session.query(
             Aircraft.registration_number,
             Aircraft.model_number,
             func.count(FlightSchedule.id).label('flight_count')
-        ).join(Flight).join(FlightSchedule).group_by(
-            Aircraft.id
-        ).order_by(func.count(FlightSchedule.id).desc()).all()
+        ).select_from(Aircraft).join(Flight, Aircraft.id == Flight.aircraft_id).join(
+            FlightSchedule, Flight.id == FlightSchedule.flight_id
+        ).group_by(Aircraft.id, Aircraft.registration_number, Aircraft.model_number).order_by(
+            func.count(FlightSchedule.id).desc()
+        ).all()
         
-        # Route frequency
+        # Route frequency - FIXED: use FlightSchedule fields
         route_frequency = session.query(
-            Flight.origin,
-            Flight.destination,
+            FlightSchedule.departure_airport,
+            FlightSchedule.arrival_airport,
             func.count(FlightSchedule.id).label('schedule_count')
-        ).join(FlightSchedule).group_by(
-            Flight.origin, Flight.destination
+        ).group_by(
+            FlightSchedule.departure_airport, FlightSchedule.arrival_airport
         ).order_by(func.count(FlightSchedule.id).desc()).limit(10).all()
         
     except Exception as e:
@@ -739,7 +741,7 @@ def load_schedule_reports_view():
     route_data = []
     for route in route_frequency:
         route_data.append({
-            "Route": f"{route.origin} → {route.destination}",
+            "Route": f"{route.departure_airport} → {route.arrival_airport}",
             "Scheduled Flights": route.schedule_count
         })
     

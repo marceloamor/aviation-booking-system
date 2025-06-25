@@ -37,7 +37,7 @@ DATABASE_URL=sqlite:///northeastern_airways.db
 
 # Flask configuration
 SECRET_KEY=your_secure_random_key
-FLASK_ENV=development
+FLASK_DEBUG=True
 DEBUG=True
 
 # App configuration

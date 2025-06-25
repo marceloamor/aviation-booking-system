@@ -226,29 +226,17 @@ def load_create_flight_view():
     finally:
         session.close()
     
-    # UK airport codes
-    uk_airports = [
-        {"label": "London Heathrow (LHR)", "value": "LHR"},
-        {"label": "London Gatwick (LGW)", "value": "LGW"},
-        {"label": "Manchester (MAN)", "value": "MAN"},
-        {"label": "Edinburgh (EDI)", "value": "EDI"},
-        {"label": "Glasgow (GLA)", "value": "GLA"},
-        {"label": "Birmingham (BHX)", "value": "BHX"},
-        {"label": "Bristol (BRS)", "value": "BRS"},
-        {"label": "Newcastle (NCL)", "value": "NCL"},
-        {"label": "Aberdeen (ABZ)", "value": "ABZ"},
-        {"label": "Belfast (BFS)", "value": "BFS"},
-        {"label": "Liverpool (LPL)", "value": "LPL"},
-        {"label": "Southampton (SOU)", "value": "SOU"},
-        {"label": "Cardiff (CWL)", "value": "CWL"},
-    ]
-    
     return html.Div([
         dbc.Card([
             dbc.CardHeader([
-                html.H5("✈️ Create New Flight Route", className="mb-0")
+                html.H5("✈️ Create New Flight", className="mb-0")
             ]),
             dbc.CardBody([
+                dbc.Alert([
+                    html.Strong("Note: "),
+                    "This creates a flight template. Routes and schedules are configured separately in the 'Create Schedule' section."
+                ], color="info", className="mb-3"),
+                
                 dbc.Form([
                     dbc.Row([
                         dbc.Col([
@@ -274,27 +262,6 @@ def load_create_flight_view():
                     
                     dbc.Row([
                         dbc.Col([
-                            dbc.Label("Origin Airport"),
-                            dcc.Dropdown(
-                                id="create-flight-origin",
-                                options=uk_airports,
-                                placeholder="Select origin",
-                                clearable=False
-                            )
-                        ], md=6),
-                        dbc.Col([
-                            dbc.Label("Destination Airport"),
-                            dcc.Dropdown(
-                                id="create-flight-destination",
-                                options=uk_airports,
-                                placeholder="Select destination",
-                                clearable=False
-                            )
-                        ], md=6)
-                    ], className="mb-3"),
-                    
-                    dbc.Row([
-                        dbc.Col([
                             dbc.Label("Base Cost (£)"),
                             dbc.Input(
                                 type="number",
@@ -304,21 +271,8 @@ def load_create_flight_view():
                                 step=0.01,
                                 required=True
                             ),
-                            dbc.FormText("Base cost before any surcharges")
-                        ], md=6),
-                        dbc.Col([
-                            dbc.Label("Flight Duration (hours)"),
-                            dbc.Input(
-                                type="number",
-                                id="create-flight-duration",
-                                placeholder="Duration in hours",
-                                min=0.5,
-                                max=12,
-                                step=0.25,
-                                value=1.5,
-                                required=True
-                            )
-                        ], md=6)
+                            dbc.FormText("Base cost before any surcharges or route-specific pricing")
+                        ], md=12)
                     ], className="mb-4"),
                     
                     dbc.Row([
@@ -354,12 +308,15 @@ def load_view_flights_view():
         
         flight_data = []
         for flight in flights:
+            # Get schedule count for this flight
+            schedule_count = session.query(FlightSchedule).filter_by(flight_id=flight.id).count()
+            
             flight_data.append({
                 "ID": flight.id,
                 "Flight Number": flight.flight_number,
-                "Route": f"{flight.origin} → {flight.destination}",
                 "Aircraft": f"{flight.aircraft.registration_number} ({flight.aircraft.model_number})",
                 "Base Cost": f"£{flight.base_cost:.2f}",
+                "Schedules": schedule_count,
                 "Created": flight.created_at.strftime("%Y-%m-%d") if flight.created_at else "N/A"
             })
         
@@ -373,15 +330,20 @@ def load_view_flights_view():
     
     if df.empty:
         return html.Div([
-            dbc.Alert("No flights found. Create your first flight route!", color="info")
+            dbc.Alert("No flights found. Create your first flight!", color="info")
         ])
     
     return html.Div([
         dbc.Card([
             dbc.CardHeader([
-                html.H5("✈️ All Flight Routes", className="mb-0")
+                html.H5("✈️ All Flights", className="mb-0")
             ]),
             dbc.CardBody([
+                dbc.Alert([
+                    html.Strong("Note: "),
+                    "Routes are defined per schedule. Use 'View Schedules' to see specific routes and times."
+                ], color="info", className="mb-3"),
+                
                 dash_table.DataTable(
                     id="flights-table",
                     data=df.to_dict("records"),
@@ -404,7 +366,7 @@ def load_create_schedule_view():
         # Get available flights
         flights = session.query(Flight).all()
         flight_options = [
-            {"label": f"{flight.flight_number} ({flight.origin} → {flight.destination})", "value": flight.id}
+            {"label": f"{flight.flight_number} ({flight.aircraft.registration_number})", "value": flight.id}
             for flight in flights
         ]
         
@@ -413,6 +375,23 @@ def load_create_schedule_view():
         flight_options = []
     finally:
         session.close()
+    
+    # UK airport codes
+    uk_airports = [
+        {"label": "London Heathrow (LHR)", "value": "LHR"},
+        {"label": "London Gatwick (LGW)", "value": "LGW"},
+        {"label": "Manchester (MAN)", "value": "MAN"},
+        {"label": "Edinburgh (EDI)", "value": "EDI"},
+        {"label": "Glasgow (GLA)", "value": "GLA"},
+        {"label": "Birmingham (BHX)", "value": "BHX"},
+        {"label": "Bristol (BRS)", "value": "BRS"},
+        {"label": "Newcastle (NCL)", "value": "NCL"},
+        {"label": "Aberdeen (ABZ)", "value": "ABZ"},
+        {"label": "Belfast (BFS)", "value": "BFS"},
+        {"label": "Liverpool (LPL)", "value": "LPL"},
+        {"label": "Southampton (SOU)", "value": "SOU"},
+        {"label": "Cardiff (CWL)", "value": "CWL"},
+    ]
     
     return html.Div([
         dbc.Card([
@@ -427,10 +406,31 @@ def load_create_schedule_view():
                             dcc.Dropdown(
                                 id="create-schedule-flight",
                                 options=flight_options,
-                                placeholder="Select flight route",
+                                placeholder="Select flight",
                                 clearable=False
                             )
                         ], md=12)
+                    ], className="mb-3"),
+                    
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.Label("Origin Airport"),
+                            dcc.Dropdown(
+                                id="create-schedule-origin",
+                                options=uk_airports,
+                                placeholder="Select origin",
+                                clearable=False
+                            )
+                        ], md=6),
+                        dbc.Col([
+                            dbc.Label("Destination Airport"),
+                            dcc.Dropdown(
+                                id="create-schedule-destination",
+                                options=uk_airports,
+                                placeholder="Select destination",
+                                clearable=False
+                            )
+                        ], md=6)
                     ], className="mb-3"),
                     
                     dbc.Row([
@@ -517,7 +517,7 @@ def load_view_schedules_view():
             schedule_data.append({
                 "ID": schedule.id,
                 "Flight": schedule.flight.flight_number,
-                "Route": f"{schedule.flight.origin} → {schedule.flight.destination}",
+                "Route": f"{schedule.departure_airport} → {schedule.arrival_airport}",
                 "Departure": schedule.scheduled_departure_time.strftime("%Y-%m-%d %H:%M"),
                 "Arrival": schedule.scheduled_arrival_time.strftime("%Y-%m-%d %H:%M"),
                 "Status": schedule.status.value if schedule.status else "Scheduled",
@@ -555,12 +555,12 @@ def load_view_schedules_view():
                     style_header={"backgroundColor": "rgb(230, 230, 230)", "fontWeight": "bold"},
                     style_data_conditional=[
                         {
-                            "if": {"filter_query": "{Status} = DELAYED"},
+                            "if": {"filter_query": '{Status} = "DELAYED"'},
                             "backgroundColor": "#fff3cd",
                             "color": "black",
                         },
                         {
-                            "if": {"filter_query": "{Status} = CANCELLED"},
+                            "if": {"filter_query": '{Status} = "CANCELLED"'},
                             "backgroundColor": "#f8d7da",
                             "color": "black",
                         }
@@ -620,7 +620,7 @@ def load_aircraft_status_view():
                     style_header={"backgroundColor": "rgb(230, 230, 230)", "fontWeight": "bold"},
                     style_data_conditional=[
                         {
-                            "if": {"filter_query": "{Status} = Active"},
+                            "if": {"filter_query": '{Status} = "Active"'},
                             "backgroundColor": "#d4edda",
                             "color": "black",
                         }
@@ -655,7 +655,7 @@ def load_daily_operations_view():
             ops_data.append({
                 "Time": schedule.scheduled_departure_time.strftime("%H:%M"),
                 "Flight": schedule.flight.flight_number,
-                "Route": f"{schedule.flight.origin} → {schedule.flight.destination}",
+                "Route": f"{schedule.departure_airport} → {schedule.arrival_airport}",
                 "Aircraft": schedule.flight.aircraft.registration_number,
                 "Status": schedule.status.value if schedule.status else "Scheduled",
                 "Gate": schedule.departure_gate or "TBA"
@@ -696,8 +696,8 @@ def load_performance_reports_view():
         performance_analysis = session.execute(text("""
             SELECT 
                 f.flight_number,
-                f.origin,
-                f.destination,
+                fs.departure_airport as origin,
+                fs.arrival_airport as destination,
                 a.registration_number as aircraft,
                 a.model_number,
                 COUNT(fs.id) as total_schedules,
@@ -709,8 +709,8 @@ def load_performance_reports_view():
                     COUNT(fs.id), 2
                 ) as on_time_percentage,
                 COUNT(b.id) as total_bookings,
-                COALESCE(SUM(b.total_price), 0) as total_revenue,
-                ROUND(AVG(b.total_price), 2) as avg_booking_value,
+                COALESCE(SUM(b.cost_charged), 0) as total_revenue,
+                ROUND(AVG(b.cost_charged), 2) as avg_booking_value,
                 ROUND(
                     (COUNT(b.id) * 100.0) / 
                     NULLIF(COUNT(fs.id), 0), 2
@@ -722,7 +722,7 @@ def load_performance_reports_view():
             LEFT JOIN flight_schedules fs ON f.id = fs.flight_id
             LEFT JOIN bookings b ON fs.id = b.flight_schedule_id
             WHERE fs.scheduled_departure_time >= DATE('now', '-90 days')
-            GROUP BY f.id, f.flight_number, f.origin, f.destination, a.registration_number, a.model_number
+            GROUP BY f.id, f.flight_number, fs.departure_airport, fs.arrival_airport, a.registration_number, a.model_number
             HAVING COUNT(fs.id) > 0
             ORDER BY on_time_percentage DESC, total_revenue DESC
         """)).fetchall()
@@ -742,10 +742,10 @@ def load_performance_reports_view():
                         ELSE 0.0
                     END
                 ) as efficiency_score,
-                SUM(b.total_price) as revenue_generated,
+                SUM(b.cost_charged) as revenue_generated,
                 COUNT(b.id) as passengers_carried,
                 ROUND(
-                    SUM(b.total_price) / NULLIF(COUNT(fs.id), 0), 2
+                    SUM(b.cost_charged) / NULLIF(COUNT(fs.id), 0), 2
                 ) as revenue_per_flight
             FROM aircraft a
             LEFT JOIN flights f ON a.id = f.aircraft_id
@@ -819,17 +819,17 @@ def load_performance_reports_view():
                     page_size=15,
                     style_data_conditional=[
                         {
-                            "if": {"filter_query": "{Status} = Excellent"},
+                            "if": {"filter_query": '{Status} = "Excellent"'},
                             "backgroundColor": "#d4edda",
                             "color": "black",
                         },
                         {
-                            "if": {"filter_query": "{Status} = Good"},
+                            "if": {"filter_query": '{Status} = "Good"'},
                             "backgroundColor": "#fff3cd",
                             "color": "black",
                         },
                         {
-                            "if": {"filter_query": "{Status} = Needs Improvement"},
+                            "if": {"filter_query": '{Status} = "Needs Improvement"'},
                             "backgroundColor": "#f8d7da",
                             "color": "black",
                         }
@@ -876,18 +876,12 @@ def load_performance_reports_view():
     Input("submit-create-flight", "n_clicks"),
     [State("create-flight-number", "value"),
      State("create-flight-aircraft", "value"),
-     State("create-flight-origin", "value"),
-     State("create-flight-destination", "value"),
-     State("create-flight-cost", "value"),
-     State("create-flight-duration", "value")],
+     State("create-flight-cost", "value")],
     prevent_initial_call=True
 )
-def create_flight(n_clicks, flight_number, aircraft_id, origin, destination, cost, duration):
-    if not all([flight_number, aircraft_id, origin, destination, cost, duration]):
+def create_flight(n_clicks, flight_number, aircraft_id, cost):
+    if not all([flight_number, aircraft_id, cost]):
         return dbc.Alert("Please fill in all required fields", color="danger")
-    
-    if origin == destination:
-        return dbc.Alert("Origin and destination cannot be the same", color="danger")
     
     session = get_session()
     try:
@@ -901,12 +895,10 @@ def create_flight(n_clicks, flight_number, aircraft_id, origin, destination, cos
         if not user_id:
             return dbc.Alert("User not logged in", color="danger")
         
-        # Create new flight
+        # Create new flight - only with valid Flight model fields
         new_flight = Flight(
             flight_number=flight_number.upper(),
             aircraft_id=aircraft_id,
-            origin=origin,
-            destination=destination,
             base_cost=float(cost),
             created_by_user_id=user_id
         )
@@ -914,10 +906,11 @@ def create_flight(n_clicks, flight_number, aircraft_id, origin, destination, cos
         session.add(new_flight)
         session.commit()
         
-        return dbc.Alert(
-            f"Flight {flight_number.upper()} created successfully!",
-            color="success"
-        )
+        return dbc.Alert([
+            html.H6("✅ Flight Created Successfully!", className="mb-2"),
+            html.P(f"Flight {flight_number.upper()} has been created with base cost £{cost}."),
+            html.P("You can now create schedules for this flight using the 'Create Schedule' section.", className="mb-0")
+        ], color="success")
         
     except Exception as e:
         session.rollback()
@@ -930,15 +923,20 @@ def create_flight(n_clicks, flight_number, aircraft_id, origin, destination, cos
     Output("create-schedule-output", "children"),
     Input("submit-create-schedule", "n_clicks"),
     [State("create-schedule-flight", "value"),
+     State("create-schedule-origin", "value"),
+     State("create-schedule-destination", "value"),
      State("create-schedule-date", "value"),
      State("create-schedule-time", "value"),
      State("create-schedule-status", "value"),
      State("create-schedule-gate", "value")],
     prevent_initial_call=True
 )
-def create_schedule(n_clicks, flight_id, departure_date, departure_time, status, gate):
-    if not all([flight_id, departure_date, departure_time, status]):
+def create_schedule(n_clicks, flight_id, origin, destination, departure_date, departure_time, status, gate):
+    if not all([flight_id, origin, destination, departure_date, departure_time, status]):
         return dbc.Alert("Please fill in all required fields", color="danger")
+    
+    if origin == destination:
+        return dbc.Alert("Origin and destination airports cannot be the same", color="danger")
     
     session = get_session()
     try:
@@ -963,16 +961,20 @@ def create_schedule(n_clicks, flight_id, departure_date, departure_time, status,
             scheduled_departure_time=departure_datetime,
             scheduled_arrival_time=arrival_datetime,
             status=FlightStatus[status],
-            departure_gate=gate if gate else None
+            departure_gate=gate if gate else None,
+            departure_airport=origin,
+            arrival_airport=destination
         )
         
         session.add(new_schedule)
         session.commit()
         
-        return dbc.Alert(
-            f"Schedule created successfully for {flight.flight_number} on {departure_date} at {departure_time}!",
-            color="success"
-        )
+        return dbc.Alert([
+            html.H6("✅ Schedule Created Successfully!", className="mb-2"),
+            html.P(f"Schedule created for flight {flight.flight_number}"),
+            html.P(f"Route: {origin} → {destination}"),
+            html.P(f"Departure: {departure_date} at {departure_time}", className="mb-0")
+        ], color="success")
         
     except ValueError as e:
         return dbc.Alert("Invalid date or time format", color="danger")

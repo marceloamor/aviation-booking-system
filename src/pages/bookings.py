@@ -65,7 +65,33 @@ def layout():
                             color="primary"
                         )
                     ])
-                ], id="rating-modal", size="lg", is_open=False)
+                ], id="rating-modal", size="lg", is_open=False),
+                
+                # Thank you modal for after rating submission
+                dbc.Modal([
+                    dbc.ModalHeader(dbc.ModalTitle("✈️ Thank You!", className="text-center w-100")),
+                    dbc.ModalBody([
+                        html.Div([
+                            html.Div("🎉", className="text-center", style={"fontSize": "4rem"}),
+                            html.H4("Thank you for flying with Northeastern Airways!", className="text-center mb-3"),
+                            html.P("Your feedback is incredibly valuable to us and helps us improve our service.", className="text-center mb-3"),
+                            html.P("We look forward to welcoming you aboard again soon!", className="text-center mb-4"),
+                            html.Div([
+                                html.I(className="fas fa-plane me-2"),
+                                html.Span("Safe travels!"),
+                                html.I(className="fas fa-heart ms-2 text-danger")
+                            ], className="text-center text-muted")
+                        ])
+                    ]),
+                    dbc.ModalFooter([
+                        dbc.Button(
+                            "Continue",
+                            id="thank-you-modal-close",
+                            color="primary",
+                            className="mx-auto"
+                        )
+                    ])
+                ], id="thank-you-modal", size="md", is_open=False, centered=True)
             ])
         ])
     ])
@@ -368,6 +394,7 @@ def open_rating_modal(n_clicks, is_open):
 
 @callback(
     [Output("rating-modal", "is_open", allow_duplicate=True),
+     Output("thank-you-modal", "is_open", allow_duplicate=True),
      Output("past-bookings-content", "children", allow_duplicate=True)],
     Input("rating-submit-btn", "n_clicks"),
     [State("rating-booking-id", "data"),
@@ -378,7 +405,7 @@ def open_rating_modal(n_clicks, is_open):
 )
 def submit_rating(n_clicks, booking_id, stars, comments, active_tab):
     if not n_clicks or not booking_id:
-        return dash.no_update, dash.no_update
+        return dash.no_update, dash.no_update, dash.no_update
     
     # Save the rating
     session = get_session()
@@ -407,11 +434,11 @@ def submit_rating(n_clicks, booking_id, stars, comments, active_tab):
         
         session.commit()
         
-        # Close modal and refresh past bookings
-        return False, load_past_bookings(active_tab)
+        # Close rating modal, show thank you modal, and refresh past bookings
+        return False, True, load_past_bookings(active_tab)
         
     except Exception as e:
-        return False, dbc.Alert(f"Error submitting rating: {str(e)}", color="danger")
+        return False, False, dbc.Alert(f"Error submitting rating: {str(e)}", color="danger")
 
 # Callback to close the rating modal without submitting
 @callback(
@@ -420,6 +447,17 @@ def submit_rating(n_clicks, booking_id, stars, comments, active_tab):
     prevent_initial_call=True
 )
 def close_rating_modal(n_clicks):
+    if n_clicks:
+        return False
+    return dash.no_update
+
+# Callback to close the thank you modal
+@callback(
+    Output("thank-you-modal", "is_open", allow_duplicate=True),
+    Input("thank-you-modal-close", "n_clicks"),
+    prevent_initial_call=True
+)
+def close_thank_you_modal(n_clicks):
     if n_clicks:
         return False
     return dash.no_update 
