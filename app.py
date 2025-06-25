@@ -118,6 +118,8 @@ def update_navigation(logout_trigger, login_status):
                     children=[
                         dbc.DropdownMenuItem("Profile", href="/profile"),
                         dbc.DropdownMenuItem("Settings", href="/settings"),
+                        dbc.DropdownMenuItem(divider=True),
+                        dbc.DropdownMenuItem("Logout", id="nav-logout-btn"),
                     ],
                     nav=True,
                     in_navbar=True,
@@ -157,11 +159,11 @@ def update_navigation(logout_trigger, login_status):
     [Output("logout-trigger", "data"),
      Output("app-navigation", "children", allow_duplicate=True),
      Output("app-header", "children", allow_duplicate=True)],
-    Input("header-logout-btn", "n_clicks"),
+    Input("nav-logout-btn", "n_clicks"),
     prevent_initial_call=True
 )
-def handle_logout(n_clicks):
-    if n_clicks:
+def handle_logout(nav_clicks):
+    if nav_clicks:
         # Clear the session
         flask.session.clear()
         
