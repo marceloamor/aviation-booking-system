@@ -1,10 +1,11 @@
 import dash
-from dash import html, dcc, callback, Input, Output
+from dash import html, dcc, callback, Input, Output, no_update
 import dash_bootstrap_components as dbc
 from flask import Flask
 import flask
 import os
 from dotenv import load_dotenv
+from src.utils.auth import get_user_display_info
 
 # Load environment variables
 load_dotenv()
@@ -92,10 +93,8 @@ def update_header(logout_trigger, login_status):
             ], fluid=False, className="py-3 bg-light rounded")
         ])
     else:
-        return html.Div([
-            html.H1("✈️ Northeastern Airways", className="display-4"),
-            html.P("Flight Booking System", className="lead"),
-        ], className="container py-3 bg-light rounded")
+        # Return empty div when not logged in - no header needed
+        return html.Div()
 
 @callback(
     Output("app-navigation", "children"),
@@ -108,24 +107,47 @@ def update_navigation(logout_trigger, login_status):
     user_name = flask.session.get("user_name")
     
     if user_id:
-        # User is logged in - show full navigation
+        # Get user role information
+        user_info = get_user_display_info()
+        
+        # Build navigation items based on role
+        nav_items = [
+            dbc.NavItem(dbc.NavLink("Home", href="/")),
+            dbc.NavItem(dbc.NavLink("Flights", href="/flights")),
+            dbc.NavItem(dbc.NavLink("My Bookings", href="/bookings")),
+        ]
+        
+        # Add admin link if user is admin
+        if user_info.get("is_admin"):
+            nav_items.append(dbc.NavItem(dbc.NavLink("Admin Panel", href="/admin")))
+        
+        # Add staff link if user is technical staff
+        if user_info.get("is_technical_staff"):
+            nav_items.append(dbc.NavItem(dbc.NavLink("Flight Management", href="/staff")))
+        
+        # Add user indicator and logout button
+        nav_items.extend([
+            dbc.NavItem(
+                dbc.NavLink(
+                    f"👤 {user_name.split()[0] if user_name else 'User'}",
+                    disabled=True,
+                    className="text-light"
+                )
+            ),
+            dbc.NavItem(
+                dbc.Button(
+                    "Logout",
+                    id="nav-logout-btn",
+                    color="outline-light",
+                    size="sm",
+                    className="ms-2"
+                )
+            ),
+        ])
+        
+        # User is logged in - show full navigation with role-based items
         return dbc.NavbarSimple(
-            children=[
-                dbc.NavItem(dbc.NavLink("Home", href="/")),
-                dbc.NavItem(dbc.NavLink("Flights", href="/flights")),
-                dbc.NavItem(dbc.NavLink("My Bookings", href="/bookings")),
-                dbc.DropdownMenu(
-                    children=[
-                        dbc.DropdownMenuItem("Profile", href="/profile"),
-                        dbc.DropdownMenuItem("Settings", href="/settings"),
-                        dbc.DropdownMenuItem(divider=True),
-                        dbc.DropdownMenuItem("Logout", id="nav-logout-btn"),
-                    ],
-                    nav=True,
-                    in_navbar=True,
-                    label=f"👤 {user_name.split()[0] if user_name else 'User'}",
-                ),
-            ],
+            children=nav_items,
             brand="✈️ Northeastern Airways",
             brand_href="/",
             color="primary",
@@ -159,11 +181,11 @@ def update_navigation(logout_trigger, login_status):
     [Output("logout-trigger", "data"),
      Output("app-navigation", "children", allow_duplicate=True),
      Output("app-header", "children", allow_duplicate=True)],
-    Input("nav-logout-btn", "n_clicks"),
+    Input("header-logout-btn", "n_clicks"),
     prevent_initial_call=True
 )
-def handle_logout(nav_clicks):
-    if nav_clicks:
+def handle_logout(n_clicks):
+    if n_clicks:
         # Clear the session
         flask.session.clear()
         
@@ -189,13 +211,48 @@ def handle_logout(nav_clicks):
             className="mb-4",
         )
         
-        logged_out_header = html.Div([
-            html.H1("✈️ Northeastern Airways", className="display-4"),
-            html.P("Flight Booking System", className="lead"),
-        ], className="container py-3 bg-light rounded")
+        logged_out_header = html.Div()
         
         return True, logged_out_nav, logged_out_header
     return False, html.Div(), html.Div()
+
+@callback(
+    [Output("app-navigation", "children", allow_duplicate=True),
+     Output("app-header", "children", allow_duplicate=True)],
+    Input("nav-logout-btn", "n_clicks"),
+    prevent_initial_call=True
+)
+def nav_logout(n_clicks):
+    if n_clicks:
+        # Clear the session
+        flask.session.clear()
+        
+        # Return logged-out navigation and header
+        logged_out_nav = dbc.NavbarSimple(
+            children=[
+                dbc.NavItem(dbc.NavLink("Home", href="/")),
+                dbc.NavItem(dbc.NavLink("Flights", href="/flights")),
+                dbc.DropdownMenu(
+                    children=[
+                        dbc.DropdownMenuItem("Login", href="/login"),
+                        dbc.DropdownMenuItem("Register", href="/register"),
+                    ],
+                    nav=True,
+                    in_navbar=True,
+                    label="Sign In",
+                ),
+            ],
+            brand="✈️ Northeastern Airways",
+            brand_href="/",
+            color="primary",
+            dark=True,
+            className="mb-4",
+        )
+        
+        logged_out_header = html.Div()
+        
+        return logged_out_nav, logged_out_header
+    return no_update, no_update
 
 if __name__ == '__main__':
     app.run_server(debug=True) 
