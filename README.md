@@ -174,21 +174,3 @@ northeastern-airways/
 └── docs/
     └── ERD.png            # Entity-relationship diagram
 ```
-
----
-
-## 👥 Team
-- [Your Name]
-- [Colleague Name]
-
-(Replace with GitHub handles or full names as needed.)
-
----
-
-## 🛡️ Academic Integrity Note
-This project complies with all academic regulations. No AI-generated code is submitted as final work unless explicitly permitted.
-
----
-
-## 📝 License
-MIT License (optional)
