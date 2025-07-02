@@ -1,11 +1,11 @@
-# ✈️ Northeastern Airways Booking System
+# Northeastern Airways Booking System
 
-## 📘 Project Overview
+## Project Overview
 
-This project is part of the **LCSCI7228 – Database Management Systems** course (Level 7) at Northeastern University London.
+This project is part of the **LCSCI7228 – Database Management Systems** course at Northeastern University London.
 
-### 🎯 Objective
-Build a full-stack, database-driven application for **Northeastern Airways**, a fictional airline operating local UK-only flights. The app enables:
+### Objective
+Build a full-stack, database-driven application for **Northeastern Airways**, a airline operating domestic flights. The app enables:
 
 - Passenger registration and flight booking
 - Personnel and admin management
@@ -17,30 +17,30 @@ This system supports multi-user roles and demonstrates practical database design
 
 ---
 
-## 🧱 Functional Modules
+## Functional Modules
 
-### 👤 User Management
+### User Management
 - Register users with full contact and address details
 - Users can have one or more roles: **Passenger**, **Admin**, **Technical Staff**, or **Non-Technical Staff**
 - Authentication and role-based access control (admin tasks)
 
-### ✈️ Flight & Schedule Management
+### Flight & Schedule Management
 - Technical staff can create flights
 - Associate flights with aircraft, add costs, and track schedules
 - Return flights and self-referencing scheduling support
 - Real-time status updates (e.g., Scheduled, Delayed, Landed)
 
-### 🛫 Booking System
+### Booking System
 - Passengers can search for and book flights
 - Booking generates confirmation codes and logs costs
 - History view for users showing past flights and total spend
 
-### ⭐ Ratings & Feedback
+### Ratings & Feedback
 - Passengers leave 1–5 star ratings after flights
 - Optional comments
 - Automated thank-you message sent to each passenger
 
-### 📊 SQL Reports
+### SQL Reports
 The system includes 5 reports built with complex SQL, demonstrating:
 - Joins (including non-inner joins)
 - Subqueries
@@ -51,7 +51,7 @@ The system includes 5 reports built with complex SQL, demonstrating:
 
 ---
 
-## 🗃️ Database Schema
+## Database Schema
 
 ### Tables & Relationships
 
@@ -120,7 +120,7 @@ The system includes 5 reports built with complex SQL, demonstrating:
 
 ---
 
-## 🧰 Tech Stack
+## Tech Stack
 
 | Layer         | Technology      |
 |---------------|-----------------|
@@ -130,7 +130,7 @@ The system includes 5 reports built with complex SQL, demonstrating:
 | **ORM**       | SQLAlchemy |
 | **Versioning**| Git + GitHub |
 | **IDE**       | Cursor |
-| **Deployment**| Local dev (future-ready for Heroku/Fly.io) |
+| **Deployment**| Local dev |
 
 ### Why Dash?
 - Simplified integration of Python + UI
@@ -142,35 +142,3 @@ The system includes 5 reports built with complex SQL, demonstrating:
 - SQLite is easy to set up locally
 - Future-proofing: can switch to PostgreSQL with minimal code changes
 
----
-
-## 🚀 Project Status & Next Steps
-
-| Stage                        | Status       |
-|-----------------------------|--------------|
-| ERD and schema finalized     | ✅ Completed |
-| ORM model definitions        | ⏳ In progress |
-| Seed data & testing          | ⏳ Next |
-| Dash page layout & UI        | ⏳ Upcoming |
-| Core functionality (CRUD)   | ⏳ Upcoming |
-| Complex SQL report building | ⏳ Later stage |
-| Video demo & presentation   | ⏳ Final stage |
-| Report writing               | ⏳ Final stage |
-
----
-
-## 📂 Folder Structure (Planned)
-
-```
-northeastern-airways/
-├── src/
-│   ├── models/            # SQLAlchemy ORM models
-│   ├── pages/             # Dash layout pages
-│   ├── logic/             # Business logic (booking, auth, rating, etc.)
-│   └── utils/             # Helpers, DB seeding, etc.
-├── app.py                 # Dash main entrypoint
-├── requirements.txt
-├── README.md
-└── docs/
-    └── ERD.png            # Entity-relationship diagram
-```
